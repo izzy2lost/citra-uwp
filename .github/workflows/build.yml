@@ -6,18 +6,12 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-    strategy:
-      matrix:
-        target: ["msvc", "msys2"]
-    defaults:
-      run:
-        shell: ${{ (matrix.target == 'msys2' && 'msys2') || 'bash' }} {0}
     env:
       CCACHE_DIR: ${{ github.workspace }}/.ccache
       CCACHE_COMPILERCHECK: content
       CCACHE_SLOPPINESS: time_macros
       OS: windows
-      TARGET: ${{ matrix.target }}
+      TARGET: msvc
 
     steps:
       - name: Checkout repository
@@ -29,28 +23,15 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.os }}-${{ matrix.target }}-${{ github.sha }}
+          key: ${{ runner.os }}-msvc-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-
+            ${{ runner.os }}-msvc-
 
       - name: Set up MSVC
-        if: ${{ matrix.target == 'msvc' }}
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install extra tools (MSVC)
-        if: ${{ matrix.target == 'msvc' }}
+      - name: Install extra tools
         run: choco install ccache ninja wget
-
-      - name: Set up MSYS2
-        if: ${{ matrix.target == 'msys2' }}
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: clang64
-          update: true
-          install: git make p7zip
-          pacboy: >-
-            toolchain:p ccache:p cmake:p ninja:p
-            qt6-base:p qt6-multimedia:p qt6-multimedia-wmf:p qt6-tools:p qt6-translations:p
 
       - name: Disable line ending translation
         run: git config --global core.autocrlf input
@@ -64,5 +45,5 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.OS }}-${{ env.TARGET }}
+          name: windows-msvc
           path: artifacts/
